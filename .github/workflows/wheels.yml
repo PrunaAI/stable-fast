@@ -32,7 +32,7 @@ jobs:
           - "3.11"
           - "3.12"
         torch_version:
-          - "2.4.1"
+          - "2.5.1"
         cuda_short_version:
           - "118"
           - "121"
