@@ -22,9 +22,9 @@ jobs:
       matrix:
         os:
           - ubuntu-20.04
-          # - windows-2019
-          # - 8-core-ubuntu
-          # - windows-8-core
+          - windows-2019
+          - 8-core-ubuntu
+          - windows-8-core
         python:
           - "3.8"
           - "3.9"
