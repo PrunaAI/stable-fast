@@ -23,8 +23,7 @@ jobs:
         os:
           - ubuntu-20.04
           - windows-2019
-          - 8-core-ubuntu
-          - windows-8-core
+          - windows-latest
         python:
           - "3.9"
           - "3.10"
