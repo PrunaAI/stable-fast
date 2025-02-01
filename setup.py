@@ -218,7 +218,7 @@ def get_extensions():
 
 
 setup(
-    name="stable-fast",
+    name="stable-fast-pruna",
     version=get_version(),
     author="Cheng Zeyi",
     url="https://github.com/chengzeyi/stable-fast",
