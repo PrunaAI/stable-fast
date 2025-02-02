@@ -183,13 +183,17 @@ jobs:
           set -Eeuo pipefail
           git config --global --add safe.directory "*"
           version=`cat version.txt`
-          # Set build version to x.x.x.devYYYYMMDD+torchxxxcu111
           torch_version_suffix=torch$(echo ${{ inputs.torch_version }} | sed 's/\.//g')
           cuda_version_suffix=${{ steps.cuda_info.outputs.CUDA_VERSION_SUFFIX }}
           nightly_tag=$([[ ${VERSION_SOURCE} == 'tag' ]] && echo '' || echo '.dev'`date +%Y%m%d`)
-          echo "BUILD_VERSION=${version}" >> ${GITHUB_ENV}
-          echo "BUILD_VERSION=${version}" >> ${GITHUB_OUTPUT}
-          cat ${GITHUB_ENV}
+          
+          if [[ "${{ inputs.cuda_short_version }}" == "121" ]]; then
+            echo "BUILD_VERSION=${version}" >> ${GITHUB_ENV}
+            echo "BUILD_VERSION=${version}" >> ${GITHUB_OUTPUT}
+          else
+            echo "BUILD_VERSION=${version}+${torch_version_suffix}${cuda_version_suffix}" >> ${GITHUB_ENV}
+            echo "BUILD_VERSION=${version}+${torch_version_suffix}${cuda_version_suffix}" >> ${GITHUB_OUTPUT}
+          fi
       - run: echo "sfast-${BUILD_VERSION}"
       - run: echo "release version"
         if: ${{ !contains(steps.sfast_version.outputs.BUILD_VERSION, '.dev') }}

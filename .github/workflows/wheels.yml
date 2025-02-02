@@ -1,18 +1,6 @@
 name: wheels
 
 on:
-  pull_request:
-    branches:
-      - main
-    # paths:
-    #   - ".github/workflows/wheel*"
-    #   - "setup.py"
-    #   - "requirements*.txt"
-  push:
-    branches:
-      - main
-    tags:
-      - "v[0-9]+*"
   workflow_dispatch:
 
 jobs:
@@ -31,7 +19,7 @@ jobs:
         torch_version:
           - "2.5.1"
         cuda_short_version:
-          # - "118"
+          - "118"
           - "121"
 
     uses: ./.github/workflows/wheels_build.yml
