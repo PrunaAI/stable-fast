@@ -81,12 +81,13 @@ jobs:
           cushort = "${{ inputs.cuda_short_version }}"
           # https://github.com/Jimver/cuda-toolkit/blob/master/src/links/linux-links.ts
           full_version, install_script = {
-            "121": ("12.1.0", "https://developer.download.nvidia.com/compute/cuda/12.1.0/local_installers/cuda_12.1.0_530.30.02_linux.run"),
+            "126": ("12.6.0", "https://developer.download.nvidia.com/compute/cuda/12.6.0/local_installers/cuda_12.6.0_560.28.03_linux.run"),
             "118": ("11.8.0", "https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda_11.8.0_520.61.05_linux.run"),
             "117": ("11.7.1", "https://developer.download.nvidia.com/compute/cuda/11.7.1/local_installers/cuda_11.7.1_515.65.01_linux.run"),
             "116": ("11.6.2", "https://developer.download.nvidia.com/compute/cuda/11.6.2/local_installers/cuda_11.6.2_510.47.03_linux.run"),
           }[cushort]
           cudnn_pypi_package = {
+            "126": "nvidia-cudnn-cu12",
             "121": "nvidia-cudnn-cu12",
             "118": "nvidia-cudnn-cu11",
             "117": "nvidia-cudnn-cu11",
