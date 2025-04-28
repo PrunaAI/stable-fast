@@ -19,7 +19,7 @@ jobs:
         torch_version:
           - "2.7.0"
         cuda_short_version:
-          - "121"
+          - "126"
 
     uses: ./.github/workflows/wheels_build.yml
     with:
