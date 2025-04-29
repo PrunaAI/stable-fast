@@ -188,7 +188,7 @@ jobs:
           cuda_version_suffix=${{ steps.cuda_info.outputs.CUDA_VERSION_SUFFIX }}
           nightly_tag=$([[ ${VERSION_SOURCE} == 'tag' ]] && echo '' || echo '.dev'`date +%Y%m%d`)
           
-          if [[ "${{ inputs.cuda_short_version }}" == "121" ]]; then
+          if [[ "${{ inputs.cuda_short_version }}" == "126" ]]; then
             echo "BUILD_VERSION=${version}" >> ${GITHUB_ENV}
             echo "BUILD_VERSION=${version}" >> ${GITHUB_OUTPUT}
           else
