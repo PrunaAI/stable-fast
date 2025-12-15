@@ -19,7 +19,36 @@ assert torch_ver >= [1, 8], "Requires PyTorch >= 1.8"
 
 def fetch_requirements():
     with open("requirements.txt") as f:
-        reqs = f.read().strip().split("\n")
+        lines = f.read().strip().split("\n")
+
+    # Drop empty/comment lines
+    base_reqs = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        base_reqs.append(stripped)
+
+    # Constrain torch to the major.minor of the torch that was used to build
+    # the wheel, e.g. torch 2.7.0 -> "torch>=2.7,<2.8".
+    major, minor = torch_ver[0], torch_ver[1]
+    torch_constraint = f"torch>={major}.{minor},<{major}.{minor + 1}"
+
+    reqs = []
+    torch_added = False
+    for req in base_reqs:
+        # Replace any existing torch specification with our constrained one.
+        if req.split()[0].startswith("torch"):
+            if not torch_added:
+                reqs.append(torch_constraint)
+                torch_added = True
+            # Skip additional torch lines
+        else:
+            reqs.append(req)
+
+    if not torch_added:
+        reqs.append(torch_constraint)
+
     return reqs
 
 
@@ -40,6 +69,42 @@ def get_version():
 
         date_str = datetime.today().strftime("%y%m%d")
         version = version + ".dev" + date_str
+
+    # Optionally append the CUDA and torch version used to build this
+    # wheel as a local version suffix, e.g. "+cu126.torch2.7".
+    if os.getenv("SFAST_APPEND_VERSION", "0") not in (
+        "0",
+        "",
+        "false",
+        "False",
+    ):
+        torch_version_str = os.getenv("TORCH_VERSION_FOR_BUILD", torch.__version__)
+
+        # torch_version_str is typically like "2.7.0+cu126" or "2.7.0".
+        cuda_token = ""
+        base_torch = torch_version_str
+        if "+" in torch_version_str:
+            base_torch, _, local_torch = torch_version_str.partition("+")
+            # Take the first token from the local version, e.g. "cu126".
+            cuda_token = local_torch.split(".")[0]
+
+        base_parts = base_torch.split(".")
+        if len(base_parts) >= 2:
+            torch_major_minor = ".".join(base_parts[:2])
+        else:
+            torch_major_minor = base_torch
+
+        local_suffix = f"torch{torch_major_minor}"
+        if cuda_token:
+            local_suffix = f"{cuda_token}.{local_suffix}"
+
+        # Ensure we only ever have a single '+' in the version; if there is
+        # already a local segment, extend it with ".cuXXX.torchY.Z".
+        if "+" in version:
+            base_v, _, local_v = version.partition("+")
+            version = f"{base_v}+{local_v}.{local_suffix}"
+        else:
+            version = f"{version}+{local_suffix}"
 
     init_py_path = path.join(this_dir, "src", "sfast", "__init__.py")
     init_py = open(init_py_path, "r").readlines()
