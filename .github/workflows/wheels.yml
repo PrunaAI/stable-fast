@@ -85,7 +85,7 @@ jobs:
 
 
   consolidate-wheels:
-    needs: [build-local]
+    needs: [build-local, build-pypi]
     runs-on: ubuntu-latest
     steps:
       - name: Download all wheel artifacts
