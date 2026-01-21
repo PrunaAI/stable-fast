@@ -17,6 +17,11 @@ on:
         required: true
         type: string
         description: "Example: 117 for 11.7"
+      append_local_version:
+        required: false
+        type: string
+        default: '1'
+        description: "Set to '0' to disable SFAST local version suffix"
       cudnn_version_major:
         required: false
         default: '8'
@@ -38,6 +43,11 @@ on:
         required: true
         type: string
         description: "Example: 117 for 11.7"
+      append_local_version:
+        required: false
+        type: string
+        default: '1'
+        description: "Set to '0' to disable SFAST local version suffix"
       cudnn_version_major:
         required: false
         default: '8'
@@ -54,7 +64,7 @@ env:
   TORCH_CUDA_ARCH_LIST: "6.0 6.1 7.0 7.5 8.0 8.6 8.9 9.0+PTX"
   MAX_JOBS: 2
   DISTUTILS_USE_SDK: 1 # otherwise distutils will complain on windows about multiple versions of msvc
-  SFAST_APPEND_VERSION: 1
+  SFAST_APPEND_VERSION: ${{ inputs.append_local_version }}
   TWINE_USERNAME: __token__
 
 jobs:

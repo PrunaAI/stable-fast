@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-local:
     strategy:
       fail-fast: false
       matrix:
@@ -24,6 +24,25 @@ jobs:
       python: ${{ matrix.python }}
       torch_version: ${{ matrix.torch_version }}
       cuda_short_version: ${{ matrix.cuda_short_version }}
+
+  build-pypi:
+    # Single canonical build intended for PyPI: no local CUDA/torch suffix
+    # in the package version (controlled via SFAST_APPEND_VERSION).
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-22.04']
+        python: ['3.10', '3.11', '3.12']
+        torch_version: ['2.9.0']
+        cuda_short_version: ['128']
+
+    uses: ./.github/workflows/wheels_build.yml
+    with:
+      os: ${{ matrix.os }}
+      python: ${{ matrix.python }}
+      torch_version: ${{ matrix.torch_version }}
+      cuda_short_version: ${{ matrix.cuda_short_version }}
+      append_local_version: '0'
 
   # publish to GitHub Release
   # gh_release:
@@ -66,7 +85,7 @@ jobs:
 
 
   consolidate-wheels:
-    needs: [build]
+    needs: [build-local]
     runs-on: ubuntu-latest
     steps:
       - name: Download all wheel artifacts
