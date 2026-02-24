@@ -12,7 +12,7 @@ jobs:
           - ubuntu-22.04
           # - windows-2019
         python: ['3.10', '3.11', '3.12']
-        torch_version: ['2.7.0', '2.8.0', '2.9.0', '2.10.0']
+        torch_version: ['2.10.0']
         cuda_short_version: ['126']
 
     uses: ./.github/workflows/wheels_build.yml
@@ -34,7 +34,7 @@ jobs:
     with:
       os: ${{ matrix.os }}
       python: ${{ matrix.python }}
-      torch_version: '2.9.0'
+      torch_version: '2.10.0'
       cuda_short_version: '128'
       append_local_version: '0'  # 0 to disable local version suffix
 
