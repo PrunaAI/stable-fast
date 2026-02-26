@@ -654,7 +654,11 @@ void gemm<at::BFloat16>(CUDABLAS_GEMM_ARGTYPES(at::BFloat16)) {
 #if TORCH_VERSION_MAJOR > 2 ||                                                 \
     (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 2)
   cublasMath_t cublas_flags = CUBLAS_DEFAULT_MATH;
+#if TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10)
+  if (at::globalContext().allowBF16ReductionCuBLAS() != at::CuBLASReductionOption::AllowReducedPrecisionWithSplitK) {
+#else
   if (!at::globalContext().allowBF16ReductionCuBLAS()) {
+#endif
     cublas_flags = static_cast<cublasMath_t>(cublas_flags | CUBLAS_MATH_DISALLOW_REDUCED_PRECISION_REDUCTION);
   }
   TORCH_CUDABLAS_CHECK(cublasSetMathMode(handle, cublas_flags));
