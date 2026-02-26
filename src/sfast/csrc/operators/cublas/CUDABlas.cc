@@ -7,6 +7,7 @@
 #include <c10/cuda/CUDAFunctions.h>
 #include <c10/macros/Export.h>
 #include <c10/util/irange.h>
+#include <torch/version.h>
 
 // cublasLT was introduced in CUDA 10.1 but we enable only for 11.1 that also
 // added bf16 support

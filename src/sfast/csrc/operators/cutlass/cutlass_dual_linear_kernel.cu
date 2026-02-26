@@ -1,4 +1,5 @@
 #include <torch/extension.h>
+#include <torch/version.h>
 
 #include <c10/cuda/CUDAMathCompat.h>
 #include <c10/cuda/CUDAStream.h>
