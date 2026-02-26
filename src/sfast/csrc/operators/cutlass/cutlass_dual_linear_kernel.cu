@@ -487,7 +487,11 @@ torch::Tensor cutlass_linear_geglu(const torch::Tensor &input,
   auto dispatch_bf16 = [&] {
 #if TORCH_VERSION_MAJOR > 2 ||                                                 \
     (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 2)
+    #if TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10)
+    if (at::globalContext().allowBF16ReductionCuBLAS() == at::CuBLASReductionOption::AllowReducedPrecisionWithSplitK) {
+    #else
     if (at::globalContext().allowBF16ReductionCuBLAS()) {
+    #endif
       output =
           CutlassDualGemmLauncher<at::BFloat16, GemmGEGLUWrapper,
                                   cutlass::epilogue::thread::GELU_taylor_fast,
