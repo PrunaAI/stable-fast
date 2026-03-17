@@ -172,7 +172,7 @@ jobs:
           sudo apt autoremove -y
 
       - name: Recursive checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           path: "."
@@ -236,14 +236,14 @@ jobs:
 
       - name: Upload artifact (local build)
         if: ${{ inputs.append_local_version != '0' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ inputs.os }}-py${{ inputs.python }}-torch${{ inputs.torch_version }}+cu${{ inputs.cuda_short_version }}
           path: dist/*.whl
 
       - name: Upload artifact (pypi build)
         if: ${{ inputs.append_local_version == '0' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ inputs.os }}-py${{ inputs.python }}
           path: dist/*.whl
