@@ -12,7 +12,8 @@ jobs:
           - ubuntu-22.04
           # - windows-2019
         python: ['3.10', '3.11', '3.12', '3.13', '3.14']
-        torch_version: ['2.7.0', '2.8.0', '2.9.0', '2.10.0']
+        # torch_version: ['2.7.0', '2.8.0', '2.9.0', '2.10.0', '2.11.0']
+        torch_version: ['2.11.0']
         cuda_short_version: ['126']
         exclude:
           - torch_version: '2.7.0'
