@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
 import glob
+import os
 import platform
 import subprocess
-import os
 
 # import shutil
 from os import path
-from setuptools import find_packages, setup
 
 # from typing import List
 import torch
+from setuptools import find_packages, setup
 from torch.utils.cpp_extension import CUDA_HOME, CUDNN_HOME, CppExtension, CUDAExtension
 
 torch_ver = [int(x) for x in torch.__version__.split(".")[:2]]
@@ -19,7 +19,36 @@ assert torch_ver >= [1, 8], "Requires PyTorch >= 1.8"
 
 def fetch_requirements():
     with open("requirements.txt") as f:
-        reqs = f.read().strip().split("\n")
+        lines = f.read().strip().split("\n")
+
+    # Drop empty/comment lines
+    base_reqs = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        base_reqs.append(stripped)
+
+    # Constrain torch to the major.minor of the torch that was used to build
+    # the wheel, e.g. torch 2.7.0 -> "torch>=2.7,<2.8".
+    major, minor = torch_ver[0], torch_ver[1]
+    torch_constraint = f"torch>={major}.{minor},<{major}.{minor + 1}"
+
+    reqs = []
+    torch_added = False
+    for req in base_reqs:
+        # Replace any existing torch specification with our constrained one.
+        if req.split()[0].startswith("torch"):
+            if not torch_added:
+                reqs.append(torch_constraint)
+                torch_added = True
+            # Skip additional torch lines
+        else:
+            reqs.append(req)
+
+    if not torch_added:
+        reqs.append(torch_constraint)
+
     return reqs
 
 
@@ -41,6 +70,42 @@ def get_version():
         date_str = datetime.today().strftime("%y%m%d")
         version = version + ".dev" + date_str
 
+    # Optionally append the CUDA and torch version used to build this
+    # wheel as a local version suffix, e.g. "+cu126.torch2.7".
+    if os.getenv("SFAST_APPEND_VERSION", "0") not in (
+        "0",
+        "",
+        "false",
+        "False",
+    ):
+        torch_version_str = os.getenv("TORCH_VERSION_FOR_BUILD", torch.__version__)
+
+        # torch_version_str is typically like "2.7.0+cu126" or "2.7.0".
+        cuda_token = ""
+        base_torch = torch_version_str
+        if "+" in torch_version_str:
+            base_torch, _, local_torch = torch_version_str.partition("+")
+            # Take the first token from the local version, e.g. "cu126".
+            cuda_token = local_torch.split(".")[0]
+
+        base_parts = base_torch.split(".")
+        if len(base_parts) >= 2:
+            torch_major_minor = ".".join(base_parts[:2])
+        else:
+            torch_major_minor = base_torch
+
+        local_suffix = f"torch{torch_major_minor}"
+        if cuda_token:
+            local_suffix = f"{cuda_token}.{local_suffix}"
+
+        # Ensure we only ever have a single '+' in the version; if there is
+        # already a local segment, extend it with ".cuXXX.torchY.Z".
+        if "+" in version:
+            base_v, _, local_v = version.partition("+")
+            version = f"{base_v}+{local_v}.{local_suffix}"
+        else:
+            version = f"{version}+{local_suffix}"
+
     init_py_path = path.join(this_dir, "src", "sfast", "__init__.py")
     init_py = open(init_py_path, "r").readlines()
     new_init_py = [l for l in init_py if not l.startswith("__version__")]
@@ -52,8 +117,7 @@ def get_version():
 
 def get_cuda_version(cuda_dir) -> int:
     nvcc_bin = "nvcc" if cuda_dir is None else cuda_dir + "/bin/nvcc"
-    raw_output = subprocess.check_output([nvcc_bin, "-V"],
-                                         universal_newlines=True)
+    raw_output = subprocess.check_output([nvcc_bin, "-V"], universal_newlines=True)
     output = raw_output.split()
     release_idx = output.index("release") + 1
     release = output[release_idx].split(".")
@@ -69,13 +133,10 @@ def get_extensions():
     extensions_dir = path.join(this_dir, "src", "sfast", "csrc")
     include_dirs = [extensions_dir]
 
-    sources = glob.glob(path.join(extensions_dir, "**", "*.cpp"),
-                        recursive=True)
+    sources = glob.glob(path.join(extensions_dir, "**", "*.cpp"), recursive=True)
     # common code between cuda and rocm platforms, for hipify version [1,0,0] and later.
-    source_cuda = glob.glob(path.join(extensions_dir, "**", "*.cu"),
-                            recursive=True)
-    source_cuda_rt = glob.glob(path.join(extensions_dir, "**", "*.cc"),
-                               recursive=True)
+    source_cuda = glob.glob(path.join(extensions_dir, "**", "*.cu"), recursive=True)
+    source_cuda_rt = glob.glob(path.join(extensions_dir, "**", "*.cc"), recursive=True)
 
     extension = CppExtension
 
@@ -89,19 +150,25 @@ def get_extensions():
     # Skip the above useless check as we will always compile with CUDA support,
     # and the CI might be running on CPU-only machines.
     if platform.system() != "Darwin" and os.getenv("WITH_CUDA", "1") != "0":
-        assert CUDA_HOME is not None, "Cannot find CUDA installation. If you want to compile without CUDA, set `WITH_CUDA=0`."
+        assert CUDA_HOME is not None, (
+            "Cannot find CUDA installation. If you want to compile without CUDA, set `WITH_CUDA=0`."
+        )
 
         cutlass_root = os.path.join(this_dir, "third_party", "cutlass")
         cutlass_include = os.path.join(cutlass_root, "include")
-        if not os.path.exists(cutlass_root) or not os.path.exists(
-                cutlass_include):
-            raise RuntimeError("Cannot find cutlass. Please run "
-                               "`git submodule update --init --recursive`.")
+        if not os.path.exists(cutlass_root) or not os.path.exists(cutlass_include):
+            raise RuntimeError(
+                "Cannot find cutlass. Please run "
+                "`git submodule update --init --recursive`."
+            )
         include_dirs.append(cutlass_include)
-        cutlass_tools_util_include = os.path.join(cutlass_root, "tools",
-                                                  "util", "include")
+        cutlass_tools_util_include = os.path.join(
+            cutlass_root, "tools", "util", "include"
+        )
         include_dirs.append(cutlass_tools_util_include)
-        cutlass_examples_dual_gemm = os.path.join(cutlass_root, "examples", "45_dual_gemm")
+        cutlass_examples_dual_gemm = os.path.join(
+            cutlass_root, "examples", "45_dual_gemm"
+        )
         include_dirs.append(cutlass_examples_dual_gemm)
 
         extension = CUDAExtension
@@ -155,6 +222,11 @@ def get_extensions():
                 extra_compile_args["nvcc"].append("-ccbin={}".format(CC))
 
         if CUDNN_HOME is None:
+            # Prefer PyTorch's own toolchain for cuDNN / cuBLAS when possible.
+            # For older NVIDIA wheels (where nvidia.cudnn/cublas had a real __file__)
+            # we still support discovering headers via that path, but newer PyTorch
+            # / NVIDIA packaging may expose these as non file-backed modules, in which
+            # case we simply fall back to PyTorch/CUDA's default include/library dirs.
             try:
                 # Try to use the bundled version of CUDNN with PyTorch installation.
                 # This is also used in CI.
@@ -162,8 +234,19 @@ def get_extensions():
             except ImportError:
                 cudnn = None
 
+            cudnn_dir = None
             if cudnn is not None:
-                cudnn_dir = os.path.dirname(cudnn.__file__)
+                # Prefer __file__ for regular packages; fall back to __path__ for
+                # namespace-style packages used by newer NVIDIA wheels.
+                cudnn_file = getattr(cudnn, "__file__", None)
+                if cudnn_file:
+                    cudnn_dir = os.path.dirname(cudnn_file)
+                else:
+                    cudnn_paths = getattr(cudnn, "__path__", None)
+                    if cudnn_paths:
+                        cudnn_dir = list(cudnn_paths)[0]
+
+            if cudnn_dir is not None:
                 print("Using CUDNN from {}".format(cudnn_dir))
                 include_dirs.append(os.path.join(cudnn_dir, "include"))
                 # Hope PyTorch knows how to link it correctly.
@@ -181,8 +264,17 @@ def get_extensions():
             except ImportError:
                 cublas = None
 
+            cublas_dir = None
             if cublas is not None:
-                cublas_dir = os.path.dirname(cublas.__file__)
+                cublas_file = getattr(cublas, "__file__", None)
+                if cublas_file:
+                    cublas_dir = os.path.dirname(cublas_file)
+                else:
+                    cublas_paths = getattr(cublas, "__path__", None)
+                    if cublas_paths:
+                        cublas_dir = list(cublas_paths)[0]
+
+            if cublas_dir is not None:
                 print("Using CUBLAS from {}".format(cublas_dir))
                 include_dirs.append(os.path.join(cublas_dir, "include"))
                 # Hope PyTorch knows how to link it correctly.
@@ -222,13 +314,12 @@ setup(
     version=get_version(),
     author="Cheng Zeyi",
     url="https://github.com/chengzeyi/stable-fast",
-    description=
-    "Stable Fast is an ultra lightweight performance optimization framework"
+    description="Stable Fast is an ultra lightweight performance optimization framework"
     " for Hugging Fase diffuser pipelines.",
     package_dir={
-        '': 'src',
+        "": "src",
     },
-    packages=find_packages(where='src'),
+    packages=find_packages(where="src"),
     # include submodules in third_party
     python_requires=">=3.7",
     install_requires=fetch_requirements(),

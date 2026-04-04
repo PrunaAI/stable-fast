@@ -7,6 +7,7 @@
 #include <c10/cuda/CUDAFunctions.h>
 #include <c10/macros/Export.h>
 #include <c10/util/irange.h>
+#include <torch/version.h>
 
 // cublasLT was introduced in CUDA 10.1 but we enable only for 11.1 that also
 // added bf16 support
@@ -226,7 +227,9 @@ cublasStatus_t cublasGemmStridedBatchedExFix(cublasHandle_t &handle,
 template <>
 void bgemm<double>(CUDABLAS_BGEMM_ARGTYPES(double)) {
   // See Note [Writing Nondeterministic Operations]
+#if !(TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10))
   globalContext().alertCuBLASConfigNotDeterministic();
+#endif
   cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
   cublasOperation_t opa = _cublasOpFromChar(transa);
   cublasOperation_t opb = _cublasOpFromChar(transb);
@@ -239,7 +242,9 @@ void bgemm<double>(CUDABLAS_BGEMM_ARGTYPES(double)) {
 template <>
 void bgemm<float>(CUDABLAS_BGEMM_ARGTYPES(float)) {
   // See Note [Writing Nondeterministic Operations]
+#if !(TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10))
   globalContext().alertCuBLASConfigNotDeterministic();
+#endif
   cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
   cublasOperation_t opa = _cublasOpFromChar(transa);
   cublasOperation_t opb = _cublasOpFromChar(transb);
@@ -252,7 +257,9 @@ void bgemm<float>(CUDABLAS_BGEMM_ARGTYPES(float)) {
 template <>
 void bgemm<c10::complex<double>>(CUDABLAS_BGEMM_ARGTYPES(c10::complex<double>)) {
   // See Note [Writing Nondeterministic Operations]
+#if !(TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10))
   globalContext().alertCuBLASConfigNotDeterministic();
+#endif
   cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
   cublasOperation_t opa = _cublasOpFromChar(transa);
   cublasOperation_t opb = _cublasOpFromChar(transb);
@@ -267,7 +274,9 @@ void bgemm<c10::complex<double>>(CUDABLAS_BGEMM_ARGTYPES(c10::complex<double>)) 
 template <>
 void bgemm<c10::complex<float>>(CUDABLAS_BGEMM_ARGTYPES(c10::complex<float>)) {
   // See Note [Writing Nondeterministic Operations]
+#if !(TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10))
   globalContext().alertCuBLASConfigNotDeterministic();
+#endif
   cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
   cublasOperation_t opa = _cublasOpFromChar(transa);
   cublasOperation_t opb = _cublasOpFromChar(transb);
@@ -282,7 +291,9 @@ void bgemm<c10::complex<float>>(CUDABLAS_BGEMM_ARGTYPES(c10::complex<float>)) {
 template <>
 void bgemm<at::Half>(CUDABLAS_BGEMM_ARGTYPES(at::Half)) {
   // See Note [Writing Nondeterministic Operations]
+#if !(TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10))
   globalContext().alertCuBLASConfigNotDeterministic();
+#endif
   cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
   cublasOperation_t opa = _cublasOpFromChar(transa);
   cublasOperation_t opb = _cublasOpFromChar(transb);
@@ -311,7 +322,11 @@ void bgemm<at::Half>(CUDABLAS_BGEMM_ARGTYPES(at::Half)) {
 
   cudaDeviceProp* prop = at::cuda::getCurrentDeviceProperties();
   if (prop->major >= 5){
+  #if TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10)
+    if (at::globalContext().allowFP16ReductionCuBLAS() == at::CuBLASReductionOption::AllowReducedPrecisionWithSplitK) {
+  #else
     if (at::globalContext().allowFP16ReductionCuBLAS()) {
+  #endif
       at::Half falpha = alpha;
       at::Half fbeta = beta;
       TORCH_CUDABLAS_CHECK(cublasGemmStridedBatchedExFix(
@@ -350,7 +365,9 @@ void bgemm<at::Half>(CUDABLAS_BGEMM_ARGTYPES(at::Half)) {
 template <>
 void bgemm<at::BFloat16>(CUDABLAS_BGEMM_ARGTYPES(at::BFloat16)) {
   // See Note [Writing Nondeterministic Operations]
+  #if !(TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10))
   globalContext().alertCuBLASConfigNotDeterministic();
+  #endif
   BGEMM_CHECK_ARGVALUES(at::BFloat16);
   cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
   cublasOperation_t opa = _cublasOpFromChar(transa);
@@ -383,7 +400,9 @@ void bgemm<at::BFloat16>(CUDABLAS_BGEMM_ARGTYPES(at::BFloat16)) {
 template <>
 void gemm<double>(CUDABLAS_GEMM_ARGTYPES(double)) {
   // See Note [Writing Nondeterministic Operations]
+#if !(TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10))
   globalContext().alertCuBLASConfigNotDeterministic();
+#endif
   cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
   cublasOperation_t opa = _cublasOpFromChar(transa);
   cublasOperation_t opb = _cublasOpFromChar(transb);
@@ -396,7 +415,9 @@ void gemm<double>(CUDABLAS_GEMM_ARGTYPES(double)) {
 template <>
 void gemm<float>(CUDABLAS_GEMM_ARGTYPES(float)) {
   // See Note [Writing Nondeterministic Operations]
+#if !(TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10))
   globalContext().alertCuBLASConfigNotDeterministic();
+#endif
   cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
   cublasOperation_t opa = _cublasOpFromChar(transa);
   cublasOperation_t opb = _cublasOpFromChar(transb);
@@ -410,7 +431,9 @@ void gemm<float>(CUDABLAS_GEMM_ARGTYPES(float)) {
   template <>
   void gemm<c10::complex<double>>(CUDABLAS_GEMM_ARGTYPES(c10::complex<double>)) {
     // See Note [Writing Nondeterministic Operations]
+  #if !(TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10))
     globalContext().alertCuBLASConfigNotDeterministic();
+  #endif
     cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
     cublasOperation_t opa = _cublasOpFromChar(transa);
     cublasOperation_t opb = _cublasOpFromChar(transb);
@@ -427,7 +450,9 @@ void gemm<float>(CUDABLAS_GEMM_ARGTYPES(float)) {
   template <>
   void gemm<c10::complex<float>>(CUDABLAS_GEMM_ARGTYPES(c10::complex<float>)) {
     // See Note [Writing Nondeterministic Operations]
+  #if !(TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10))
     globalContext().alertCuBLASConfigNotDeterministic();
+  #endif
     cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
     cublasOperation_t opa = _cublasOpFromChar(transa);
     cublasOperation_t opb = _cublasOpFromChar(transb);
@@ -443,7 +468,9 @@ void gemm<float>(CUDABLAS_GEMM_ARGTYPES(float)) {
 template <>
 void gemm<at::Half>(CUDABLAS_GEMM_ARGTYPES(at::Half)) {
   // See Note [Writing Nondeterministic Operations]
+#if !(TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10))
   globalContext().alertCuBLASConfigNotDeterministic();
+#endif
   cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
   cublasOperation_t opa = _cublasOpFromChar(transa);
   cublasOperation_t opb = _cublasOpFromChar(transb);
@@ -490,12 +517,20 @@ void gemm<at::Half>(CUDABLAS_GEMM_ARGTYPES(at::Half)) {
     TORCH_CUDABLAS_CHECK(cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH));
 #else
     cublasMath_t cublas_flags = CUBLAS_DEFAULT_MATH;
+#if TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10)
+    if (at::globalContext().allowFP16ReductionCuBLAS() != at::CuBLASReductionOption::AllowReducedPrecisionWithSplitK) {
+#else
     if (!at::globalContext().allowFP16ReductionCuBLAS()) {
+#endif
       cublas_flags = static_cast<cublasMath_t>(cublas_flags | CUBLAS_MATH_DISALLOW_REDUCED_PRECISION_REDUCTION);
     }
     TORCH_CUDABLAS_CHECK(cublasSetMathMode(handle, cublas_flags));
 #endif  // defined(CUDA_VERSION) && CUDA_VERSION < 11000
+#if TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10)
+    if (at::globalContext().allowFP16ReductionCuBLAS() == at::CuBLASReductionOption::AllowReducedPrecisionWithSplitK) {
+#else
     if (at::globalContext().allowFP16ReductionCuBLAS()) {
+#endif
       at::Half falpha = alpha;
       at::Half fbeta = beta;
       TORCH_CUDABLAS_CHECK(cublasGemmEx_(
@@ -606,7 +641,9 @@ void gemm<at::BFloat16>(CUDABLAS_GEMM_ARGTYPES(at::BFloat16)) {
 #if defined(CUDA_VERSION) && CUDA_VERSION >= 11000
 template <>
 void gemm<at::BFloat16>(CUDABLAS_GEMM_ARGTYPES(at::BFloat16)) {
+#if !(TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10))
   globalContext().alertCuBLASConfigNotDeterministic();
+#endif
   cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
   cublasOperation_t opa = _cublasOpFromChar(transa);
   cublasOperation_t opb = _cublasOpFromChar(transb);
@@ -617,7 +654,11 @@ void gemm<at::BFloat16>(CUDABLAS_GEMM_ARGTYPES(at::BFloat16)) {
 #if TORCH_VERSION_MAJOR > 2 ||                                                 \
     (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 2)
   cublasMath_t cublas_flags = CUBLAS_DEFAULT_MATH;
+#if TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10)
+  if (at::globalContext().allowBF16ReductionCuBLAS() != at::CuBLASReductionOption::AllowReducedPrecisionWithSplitK) {
+#else
   if (!at::globalContext().allowBF16ReductionCuBLAS()) {
+#endif
     cublas_flags = static_cast<cublasMath_t>(cublas_flags | CUBLAS_MATH_DISALLOW_REDUCED_PRECISION_REDUCTION);
   }
   TORCH_CUDABLAS_CHECK(cublasSetMathMode(handle, cublas_flags));
@@ -1126,7 +1167,9 @@ void trsmBatched<c10::complex<double>>(
   template <>
   void gemv<c10::complex<double>>(CUDABLAS_GEMV_ARGTYPES(c10::complex<double>)) {
     // See Note [Writing Nondeterministic Operations]
+  #if !(TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10))
     globalContext().alertCuBLASConfigNotDeterministic();
+  #endif
     cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
     cublasOperation_t op = _cublasOpFromChar(trans);
     _cublasAdjustLdLevel2(m, n, &lda);
@@ -1145,7 +1188,9 @@ void gemv<c10::complex<float>>(CUDABLAS_GEMV_ARGTYPES(c10::complex<float>)) {
   // loss still happens on TF32. So we disable it here.
   NoTF32Guard disable_tf32;
   // See Note [Writing Nondeterministic Operations]
+#if !(TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10))
   globalContext().alertCuBLASConfigNotDeterministic();
+#endif
   cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
   cublasOperation_t op = _cublasOpFromChar(trans);
   _cublasAdjustLdLevel2(m, n, &lda);
@@ -1160,7 +1205,9 @@ void gemv<c10::complex<float>>(CUDABLAS_GEMV_ARGTYPES(c10::complex<float>)) {
 template <>
 void gemv<double>(CUDABLAS_GEMV_ARGTYPES(double)) {
   // See Note [Writing Nondeterministic Operations]
+#if !(TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10))
   globalContext().alertCuBLASConfigNotDeterministic();
+#endif
   cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
   cublasOperation_t op = _cublasOpFromChar(trans);
   _cublasAdjustLdLevel2(m, n, &lda);
@@ -1175,7 +1222,9 @@ void gemv<float>(CUDABLAS_GEMV_ARGTYPES(float)) {
   // loss still happens on TF32. So we disable it here.
   NoTF32Guard disable_tf32;
   // See Note [Writing Nondeterministic Operations]
+#if !(TORCH_VERSION_MAJOR > 2 || (TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR >= 10))
   globalContext().alertCuBLASConfigNotDeterministic();
+#endif
   cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
   cublasOperation_t op = _cublasOpFromChar(trans);
   _cublasAdjustLdLevel2(m, n, &lda);
