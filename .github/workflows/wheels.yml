@@ -28,21 +28,21 @@ jobs:
       torch_version: ${{ matrix.torch_version }}
       cuda_short_version: ${{ matrix.cuda_short_version }}
 
-  # build-pypi:
-  #   # Single canonical build intended for PyPI: no local CUDA/torch suffix
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os: ['ubuntu-22.04']
-  #       python: ['3.10', '3.11', '3.12', '3.13', '3.14']
+  build-pypi:
+    # Single canonical build intended for PyPI: no local CUDA/torch suffix
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-22.04']
+        python: ['3.10', '3.11', '3.12', '3.13', '3.14']
 
-  #   uses: ./.github/workflows/wheels_build.yml
-  #   with:
-  #     os: ${{ matrix.os }}
-  #     python: ${{ matrix.python }}
-  #     torch_version: '2.9.0'
-  #     cuda_short_version: '128'
-  #     append_local_version: '0'  # 0 to disable local version suffix
+    uses: ./.github/workflows/wheels_build.yml
+    with:
+      os: ${{ matrix.os }}
+      python: ${{ matrix.python }}
+      torch_version: '2.9.0'
+      cuda_short_version: '128'
+      append_local_version: '0'  # 0 to disable local version suffix
 
   # publish to GitHub Release
   # gh_release:
